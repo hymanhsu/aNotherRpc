@@ -1,14 +1,14 @@
-# introduction
+# 介绍
 
 aNother Remote Process Call Framwork
 
 基于Protobuf3.2版本搭建的RPC框架，自带服务注册与发现功能，具备基本的服务框架的能力。
 
 
-# Install
+# 安装
 
 ```
-pip install simpletcd
+python setup.py install
 ```
 
 # 用法
