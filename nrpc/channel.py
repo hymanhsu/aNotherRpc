@@ -55,11 +55,13 @@ class SocketRpcChannel(service.RpcChannel):
     '''
 
     def __init__(self, service_fullname=None, node_tags=None, 
-                etcd_ip=None, etcd_port=2379, recv_buf=4096,
+                etcd_ip=None, etcd_port=2379, recv_buf=4096, retry_max=1,
                 socketFactory=SocketFactory()):
         '''SocketRpcChannel to connect to a socket server
         on a user defined port.
         '''
+        self.serviceFullName = service_fullname
+        self.retryMax = retry_max
         self.recvBuf = recv_buf
         self.serviceFinder = naming.ServiceFinder(service_fullname,node_tags,etcd_ip,etcd_port)
         self.sockFactory = socketFactory
@@ -90,28 +92,28 @@ class SocketRpcChannel(service.RpcChannel):
         # Find right peer endpoint from naming service
         endpoints = self.serviceFinder.getEndpoints()
         if len(endpoints) == 0:
-            raise error.ServiceNotFoundError('Not found service from naming')
+            raise error.ServiceNotFoundError('Not found service {} from naming'.format(self.serviceFullName))
 
         random.seed()
         index = random.randint(0, len(endpoints)-1)
         endpoint = endpoints[index]
         host = endpoint[0]
         port = endpoint[1]
-        logger.debug( 'Found endpoint {}:{} of {}'.format( host, str(port), 
-            self.serviceFinder.getServiceName() ) )
+        logger.debug( 'Found endpoint {}:{} of {}'.format(host, str(port), self.serviceFullName) )
 
         self.sock = self.sockFactory.createSocket()
 
         # Connect socket to server - defined by host and port arguments
         try:
             self.sock.connect((host, port))
+            logger.debug( 'connect to {}:{} successfully'.format(host,str(port)) )
         except socket.gaierror:
-            msg = "Could not find host %s" % self.host
+            msg = "Could not find host %s" % host
             # Cleanup and re-raise the exception with the caller
             self.closeSocket(self.sock)
             raise error.UnknownHostError(msg)
         except socket.error:
-            msg = "Could not open I/O for %s:%s" % (self.host, self.port)
+            msg = "Could not open I/O for %s:%s" % (host, port)
             # Cleanup and re-raise the exception with the caller
             self.closeSocket(self.sock)
             raise error.IOError(msg)
@@ -216,20 +218,23 @@ class SocketRpcChannel(service.RpcChannel):
     def CallMethod(self, method, controller, request, response_class, done):
         '''Call the RPC method.
         '''
-        try:
+        retry = self.retryMax + 1
+        while retry > 0:
+            retry -= 1
             controller.reset()
-            # Find one avaliable socket
-            sock = self.findSocket()
-            # Create an RPC request protobuf
-            rpcRequest = self.createRpcRequest(method, request)
-            self.sendRpcMessage(sock, rpcRequest)
-            self.reply = self.recvRpcMessage(sock)
-            self.rpcResponse = self.parseResponse(self.reply,nrpc_pb2.Response)
-            self.serviceResponse =  self.parseResponse(self.rpcResponse.response_proto,response_class)
-            return self.tryToRunCallback(done)
-        except Exception as e:
-            controller.handleError(nrpc_pb2.IO_ERROR,'{0}'.format(e))
-            logger.error('CallMethod error : {0}'.format(e))
+            try:
+                # Find one avaliable socket
+                sock = self.findSocket()
+                # Create an RPC request protobuf
+                rpcRequest = self.createRpcRequest(method, request)
+                self.sendRpcMessage(sock, rpcRequest)
+                self.reply = self.recvRpcMessage(sock)
+                self.rpcResponse = self.parseResponse(self.reply,nrpc_pb2.Response)
+                self.serviceResponse =  self.parseResponse(self.rpcResponse.response_proto,response_class)
+                return self.tryToRunCallback(done)
+            except Exception as e:
+                controller.handleError(nrpc_pb2.IO_ERROR,'{0}'.format(e))
+                logger.error('CallMethod error : {0}'.format(e))
 
 
 """
