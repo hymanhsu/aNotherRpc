@@ -3,7 +3,6 @@
 
 import sys
 _b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
-from google.protobuf.internal import enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
@@ -20,108 +19,111 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='nrpc.proto',
   package='sogou.nlu.rpc',
   syntax='proto2',
-  serialized_pb=_b('\n\nnrpc.proto\x12\rsogou.nlu.rpc\"K\n\x07Request\x12\x14\n\x0cservice_name\x18\x01 \x02(\t\x12\x13\n\x0bmethod_name\x18\x02 \x02(\t\x12\x15\n\rrequest_proto\x18\x03 \x02(\x0c\"`\n\x08Response\x12-\n\nerror_code\x18\x01 \x02(\x0e\x32\x19.sogou.nlu.rpc.NErrorCode\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x16\n\x0eresponse_proto\x18\x03 \x02(\x0c*\xe5\x01\n\nNErrorCode\x12\x0b\n\x07NOERROR\x10\x00\x12\x14\n\x10\x42\x41\x44_REQUEST_DATA\x10\x01\x12\x15\n\x11\x42\x41\x44_REQUEST_PROTO\x10\x02\x12\x15\n\x11SERVICE_NOT_FOUND\x10\x03\x12\x14\n\x10METHOD_NOT_FOUND\x10\x04\x12\r\n\tRPC_ERROR\x10\x05\x12\x0e\n\nRPC_FAILED\x10\x06\x12\x19\n\x15INVALID_REQUEST_PROTO\x10\x07\x12\x16\n\x12\x42\x41\x44_RESPONSE_PROTO\x10\x08\x12\x10\n\x0cUNKNOWN_HOST\x10\t\x12\x0c\n\x08IO_ERROR\x10\nB\'\n\rsogou.nlu.rpcB\rsogou.nlu.rpc\x80\x01\x01\x88\x01\x01\x90\x01\x01')
+  serialized_pb=_b('\n\nnrpc.proto\x12\rsogou.nlu.rpc\"\x86\x01\n\x08NrpcMeta\x12/\n\x07request\x18\x01 \x01(\x0b\x32\x1e.sogou.nlu.rpc.NrpcRequestMeta\x12\x31\n\x08response\x18\x02 \x01(\x0b\x32\x1f.sogou.nlu.rpc.NrpcResponseMeta\x12\x16\n\x0e\x63orrelation_id\x18\x03 \x01(\x03\"\x9d\x01\n\x0fNrpcRequestMeta\x12\x14\n\x0cservice_name\x18\x01 \x02(\t\x12\x13\n\x0bmethod_name\x18\x02 \x02(\t\x12\x14\n\x0crequest_body\x18\x03 \x01(\x0c\x12\x0e\n\x06log_id\x18\x04 \x01(\x03\x12\x10\n\x08trace_id\x18\x05 \x01(\x03\x12\x0f\n\x07span_id\x18\x06 \x01(\x03\x12\x16\n\x0eparent_span_id\x18\x07 \x01(\x03\"Q\n\x10NrpcResponseMeta\x12\x12\n\nerror_code\x18\x01 \x01(\x05\x12\x12\n\nerror_text\x18\x02 \x01(\t\x12\x15\n\rresponse_body\x18\x03 \x01(\x0c\x42\'\n\rsogou.nlu.rpcB\rsogou.nlu.rpc\x80\x01\x01\x88\x01\x01\x90\x01\x01')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-_NERRORCODE = _descriptor.EnumDescriptor(
-  name='NErrorCode',
-  full_name='sogou.nlu.rpc.NErrorCode',
-  filename=None,
-  file=DESCRIPTOR,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='NOERROR', index=0, number=0,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='BAD_REQUEST_DATA', index=1, number=1,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='BAD_REQUEST_PROTO', index=2, number=2,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='SERVICE_NOT_FOUND', index=3, number=3,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='METHOD_NOT_FOUND', index=4, number=4,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='RPC_ERROR', index=5, number=5,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='RPC_FAILED', index=6, number=6,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='INVALID_REQUEST_PROTO', index=7, number=7,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='BAD_RESPONSE_PROTO', index=8, number=8,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='UNKNOWN_HOST', index=9, number=9,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='IO_ERROR', index=10, number=10,
-      options=None,
-      type=None),
-  ],
-  containing_type=None,
-  options=None,
-  serialized_start=205,
-  serialized_end=434,
-)
-_sym_db.RegisterEnumDescriptor(_NERRORCODE)
-
-NErrorCode = enum_type_wrapper.EnumTypeWrapper(_NERRORCODE)
-NOERROR = 0
-BAD_REQUEST_DATA = 1
-BAD_REQUEST_PROTO = 2
-SERVICE_NOT_FOUND = 3
-METHOD_NOT_FOUND = 4
-RPC_ERROR = 5
-RPC_FAILED = 6
-INVALID_REQUEST_PROTO = 7
-BAD_RESPONSE_PROTO = 8
-UNKNOWN_HOST = 9
-IO_ERROR = 10
 
 
 
-_REQUEST = _descriptor.Descriptor(
-  name='Request',
-  full_name='sogou.nlu.rpc.Request',
+_NRPCMETA = _descriptor.Descriptor(
+  name='NrpcMeta',
+  full_name='sogou.nlu.rpc.NrpcMeta',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='service_name', full_name='sogou.nlu.rpc.Request.service_name', index=0,
+      name='request', full_name='sogou.nlu.rpc.NrpcMeta.request', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='response', full_name='sogou.nlu.rpc.NrpcMeta.response', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='correlation_id', full_name='sogou.nlu.rpc.NrpcMeta.correlation_id', index=2,
+      number=3, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=30,
+  serialized_end=164,
+)
+
+
+_NRPCREQUESTMETA = _descriptor.Descriptor(
+  name='NrpcRequestMeta',
+  full_name='sogou.nlu.rpc.NrpcRequestMeta',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='service_name', full_name='sogou.nlu.rpc.NrpcRequestMeta.service_name', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='method_name', full_name='sogou.nlu.rpc.Request.method_name', index=1,
+      name='method_name', full_name='sogou.nlu.rpc.NrpcRequestMeta.method_name', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='request_proto', full_name='sogou.nlu.rpc.Request.request_proto', index=2,
-      number=3, type=12, cpp_type=9, label=2,
+      name='request_body', full_name='sogou.nlu.rpc.NrpcRequestMeta.request_body', index=2,
+      number=3, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='log_id', full_name='sogou.nlu.rpc.NrpcRequestMeta.log_id', index=3,
+      number=4, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='trace_id', full_name='sogou.nlu.rpc.NrpcRequestMeta.trace_id', index=4,
+      number=5, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='span_id', full_name='sogou.nlu.rpc.NrpcRequestMeta.span_id', index=5,
+      number=6, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='parent_span_id', full_name='sogou.nlu.rpc.NrpcRequestMeta.parent_span_id', index=6,
+      number=7, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -137,35 +139,35 @@ _REQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=29,
-  serialized_end=104,
+  serialized_start=167,
+  serialized_end=324,
 )
 
 
-_RESPONSE = _descriptor.Descriptor(
-  name='Response',
-  full_name='sogou.nlu.rpc.Response',
+_NRPCRESPONSEMETA = _descriptor.Descriptor(
+  name='NrpcResponseMeta',
+  full_name='sogou.nlu.rpc.NrpcResponseMeta',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='error_code', full_name='sogou.nlu.rpc.Response.error_code', index=0,
-      number=1, type=14, cpp_type=8, label=2,
+      name='error_code', full_name='sogou.nlu.rpc.NrpcResponseMeta.error_code', index=0,
+      number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='error', full_name='sogou.nlu.rpc.Response.error', index=1,
+      name='error_text', full_name='sogou.nlu.rpc.NrpcResponseMeta.error_text', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='response_proto', full_name='sogou.nlu.rpc.Response.response_proto', index=2,
-      number=3, type=12, cpp_type=9, label=2,
+      name='response_body', full_name='sogou.nlu.rpc.NrpcResponseMeta.response_body', index=2,
+      number=3, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -182,28 +184,36 @@ _RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=106,
-  serialized_end=202,
+  serialized_start=326,
+  serialized_end=407,
 )
 
-_RESPONSE.fields_by_name['error_code'].enum_type = _NERRORCODE
-DESCRIPTOR.message_types_by_name['Request'] = _REQUEST
-DESCRIPTOR.message_types_by_name['Response'] = _RESPONSE
-DESCRIPTOR.enum_types_by_name['NErrorCode'] = _NERRORCODE
+_NRPCMETA.fields_by_name['request'].message_type = _NRPCREQUESTMETA
+_NRPCMETA.fields_by_name['response'].message_type = _NRPCRESPONSEMETA
+DESCRIPTOR.message_types_by_name['NrpcMeta'] = _NRPCMETA
+DESCRIPTOR.message_types_by_name['NrpcRequestMeta'] = _NRPCREQUESTMETA
+DESCRIPTOR.message_types_by_name['NrpcResponseMeta'] = _NRPCRESPONSEMETA
 
-Request = _reflection.GeneratedProtocolMessageType('Request', (_message.Message,), dict(
-  DESCRIPTOR = _REQUEST,
+NrpcMeta = _reflection.GeneratedProtocolMessageType('NrpcMeta', (_message.Message,), dict(
+  DESCRIPTOR = _NRPCMETA,
   __module__ = 'nrpc_pb2'
-  # @@protoc_insertion_point(class_scope:sogou.nlu.rpc.Request)
+  # @@protoc_insertion_point(class_scope:sogou.nlu.rpc.NrpcMeta)
   ))
-_sym_db.RegisterMessage(Request)
+_sym_db.RegisterMessage(NrpcMeta)
 
-Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-  DESCRIPTOR = _RESPONSE,
+NrpcRequestMeta = _reflection.GeneratedProtocolMessageType('NrpcRequestMeta', (_message.Message,), dict(
+  DESCRIPTOR = _NRPCREQUESTMETA,
   __module__ = 'nrpc_pb2'
-  # @@protoc_insertion_point(class_scope:sogou.nlu.rpc.Response)
+  # @@protoc_insertion_point(class_scope:sogou.nlu.rpc.NrpcRequestMeta)
   ))
-_sym_db.RegisterMessage(Response)
+_sym_db.RegisterMessage(NrpcRequestMeta)
+
+NrpcResponseMeta = _reflection.GeneratedProtocolMessageType('NrpcResponseMeta', (_message.Message,), dict(
+  DESCRIPTOR = _NRPCRESPONSEMETA,
+  __module__ = 'nrpc_pb2'
+  # @@protoc_insertion_point(class_scope:sogou.nlu.rpc.NrpcResponseMeta)
+  ))
+_sym_db.RegisterMessage(NrpcResponseMeta)
 
 
 DESCRIPTOR.has_options = True

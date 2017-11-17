@@ -6,7 +6,7 @@ This package contains exception classes mapped to the nrpc.proto file.
 '''
 
 # Module imports
-from nrpc import nrpc_pb2
+from nrpc import errno_pb2
 
 
 class ProtobufError(Exception):
@@ -27,7 +27,7 @@ class BadRequestDataError(ProtobufError):
 
     def __init__(self, message):
         super(BadRequestDataError, self).__init__(
-            message, nrpc_pb2.BAD_REQUEST_DATA)
+            message, errno_pb2.EREQUEST)
 
 
 class BadRequestProtoError(ProtobufError):
@@ -35,7 +35,7 @@ class BadRequestProtoError(ProtobufError):
 
     def __init__(self, message):
         super(BadRequestProtoError, self).__init__(
-            message, nrpc_pb2.BAD_REQUEST_PROTO)
+            message, errno_pb2.EREQUEST)
 
 
 class ServiceNotFoundError(ProtobufError):
@@ -43,7 +43,7 @@ class ServiceNotFoundError(ProtobufError):
 
     def __init__(self, message):
         super(ServiceNotFoundError, self).__init__(
-            message, nrpc_pb2.SERVICE_NOT_FOUND)
+            message, errno_pb2.ENOSERVICE)
 
 
 class MethodNotFoundError(ProtobufError):
@@ -51,21 +51,21 @@ class MethodNotFoundError(ProtobufError):
 
     def __init__(self, message):
         super(MethodNotFoundError, self).__init__(
-            message, nrpc_pb2.METHOD_NOT_FOUND)
+            message, errno_pb2.ENOMETHOD)
 
 
 class RpcError(ProtobufError):
     '''Exception generated for an RpcError.'''
 
     def __init__(self, message):
-        super(RpcError, self).__init__(message, nrpc_pb2.RPC_ERROR)
+        super(RpcError, self).__init__(message, errno_pb2.EINTERNAL)
 
 
 class RpcFailed(ProtobufError):
     '''Exception generated for an RpcFailed.'''
 
     def __init__(self, message):
-        super(RpcFailed, self).__init__(message, nrpc_pb2.RPC_FAILED)
+        super(RpcFailed, self).__init__(message, errno_pb2.EINTERNAL)
 
 
 class InvalidRequestProtoError(ProtobufError):
@@ -73,7 +73,7 @@ class InvalidRequestProtoError(ProtobufError):
 
     def __init__(self, message):
         super(InvalidRequestProtoError, self).__init__(
-            message, nrpc_pb2.INVALID_REQUEST_PROTO)
+            message, errno_pb2.EREQUEST)
 
 
 class BadResponseProtoError(ProtobufError):
@@ -81,18 +81,18 @@ class BadResponseProtoError(ProtobufError):
 
     def __init__(self, message):
         super(BadResponseProtoError, self).__init__(
-            message, nrpc_pb2.BAD_RESPONSE_PROTO)
+            message, errno_pb2.ERESPONSE)
 
 
 class UnknownHostError(ProtobufError):
     '''Exception generated for an UnknownHostError.'''
 
     def __init__(self, message):
-        super(UnknownHostError, self).__init__(message, nrpc_pb2.UNKNOWN_HOST)
+        super(UnknownHostError, self).__init__(message, errno_pb2.SYS_EHOSTUNREACH)
 
 
 class IOError(ProtobufError):
     '''Exception generated for an IOError.'''
 
     def __init__(self, message):
-        super(IOError, self).__init__(message, nrpc_pb2.IO_ERROR)
+        super(IOError, self).__init__(message, errno_pb2.SYS_EREMOTEIO)

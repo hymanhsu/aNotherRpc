@@ -26,7 +26,7 @@ class SocketRpcController(service.RpcController):
         '''Constructor which initializes the controller's state.'''
         self._fail = False
         self._error = None
-        self._error_code = nrpc_pb2.NOERROR
+        self._error_code = 0
 
     def handleError(self, error_code, message=''):
         '''Log and set the controller state.'''
@@ -38,7 +38,7 @@ class SocketRpcController(service.RpcController):
         '''Resets the controller i.e. clears the error state.'''
         self._fail = False
         self._error = None
-        self._error_code = nrpc_pb2.NOERROR
+        self._error_code = 0
 
     def failed(self):
         '''Returns True if the controller is in a failed state.'''

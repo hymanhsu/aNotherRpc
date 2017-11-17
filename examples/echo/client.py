@@ -39,7 +39,8 @@ controller = channel.newController()
 service    = EchoService_Stub(channel)
 
 start_time_milisec = int(round(time.time() * 1000))
-count = 100
+successCount = 0
+count = 50
 while count > 0:
     count -= 1
     print(count)
@@ -47,9 +48,10 @@ while count > 0:
     if controller.failed():
         continue
     logger.debug(response.message)
+    successCount += 1
     time.sleep(.500)
 
 end_time_milisec = int(round(time.time() * 1000))
 cost_time_milisec = end_time_milisec - start_time_milisec
 logger.debug( 'cost time mili seconds : {}'.format( str(cost_time_milisec) ) )
-
+logger.debug( 'success count : {}'.format( str(successCount) ) )

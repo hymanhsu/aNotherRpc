@@ -6,7 +6,7 @@ server.py - Implementation of Nlu Server
 Protocol Desciption:
 
 
-4 bytes(Total Length) | 1 byte(0意味请求,1意味应答) | 1 byte(Reserved) | 1 byte(Reserved) | 1 byte(Reserved) | payload .... 
+4 bytes('NRPC') | 4 bytes(Total Length) | 1 byte(0意味请求,1意味应答) | 1 byte(Reserved) | 1 byte(Reserved) | 1 byte(Reserved) | payload .... 
 
 
 '''
@@ -36,7 +36,7 @@ from nrpc import etcd
 logger = logging.getLogger('')
 
 # global variable
-PROTOCOL_HEADER_LEN = 8
+PROTOCOL_HEADER_LEN = 12
 pool = thread_pool.ThreadPool()
 serviceMap = {}
 
@@ -152,21 +152,21 @@ def parseServiceRequest(bytestream_from_client):
     #print 'got request : ' + str(len(bytestream_from_client))
 
     # Convert the client request into a PB Request object
-    request = nrpc_pb2.Request()
+    nrpcMeta = nrpc_pb2.NrpcMeta()
 
     # Catch anything which isn't a valid PB bytestream
     try:
-        request.MergeFromString(bytestream_from_client)
+        nrpcMeta.MergeFromString(bytestream_from_client)
     except Exception as e:
         raise error.BadRequestDataError("Invalid request from \
                                             client (decodeError): " + str(e))
 
     # Check the request is correctly initialized
-    if not request.IsInitialized():
+    if not nrpcMeta.IsInitialized():
         raise error.BadRequestDataError("Client request is missing \
                                              mandatory fields")
 
-    return request
+    return nrpcMeta
 
 
 def retrieveService(service_name):
@@ -190,11 +190,12 @@ def retrieveMethod(service, method_name):
     return method
 
 
-def retrieveProtoRequest(service, method, request):
+def retrieveProtoRequest(service, method, nrpcMeta):
     ''' Retrieve the users protocol message from the RPC message'''
     proto_request = service.GetRequestClass(method)()
+    
     try:
-        proto_request.ParseFromString(request.request_proto)
+        proto_request.ParseFromString(nrpcMeta.request.request_body)
     except Exception as e:
         raise error.BadRequestProtoError(unicode(e))
 
@@ -206,7 +207,7 @@ def retrieveProtoRequest(service, method, request):
     return proto_request
 
 
-def callServiceMethod(service, method, proto_request):
+def callServiceMethod(service, method, proto_request, nrpcMeta):
     '''Execute a service method request.'''
 
     # Create the controller (initialised to success) and callback
@@ -218,17 +219,19 @@ def callServiceMethod(service, method, proto_request):
         raise error.RpcError(unicode(e))
 
     # Return an RPC response, with payload defined in the callback
-    response = nrpc_pb2.Response()
-    response.response_proto = response_proto.SerializeToString()
-    response.error = ''
-    response.error_code = nrpc_pb2.NOERROR
+    respNrpcMeta = nrpc_pb2.NrpcMeta()
+    respNrpcMeta.correlation_id = nrpcMeta.correlation_id
+    nrpcResponseMeta = respNrpcMeta.response
+    nrpcResponseMeta.error_code = 0
+    nrpcResponseMeta.error_text = ''
+    nrpcResponseMeta.response_body = response_proto.SerializeToString()
 
     # Check to see if controller has been set to not success by user.
     if controllerInstance.failed():
-        response.error = controllerInstance.error()
-        response.error_code = controllerInstance.errorCode()
+        nrpcResponseMeta.error_text = controllerInstance.error()
+        nrpcResponseMeta.error_code = controllerInstance.errorCode()
 
-    return response
+    return respNrpcMeta
 
 
 def handleError(e):
@@ -243,34 +246,34 @@ def handleError(e):
     return response
 
 
-def executeRequest(request):
+def executeRequest(nrpcMeta):
     '''Match a client request to the corresponding service and method on
     the server, and then call the service.'''
 
     # Retrieve the requested service
     try:
-        service = retrieveService(request.service_name)
+        service = retrieveService(nrpcMeta.request.service_name)
         #print('service_name : '+request.service_name)
     except error.ServiceNotFoundError as e:
         return handleError(e)
 
     # Retrieve the requested method
     try:
-        method = retrieveMethod(service, request.method_name)
+        method = retrieveMethod(service, nrpcMeta.request.method_name)
         #print('method_name : '+request.method_name)
     except error.MethodNotFoundError as e:
         return handleError(e)
 
     # Retrieve the protocol message
     try:
-        proto_request = retrieveProtoRequest(service, method, request)
+        proto_request = retrieveProtoRequest(service, method, nrpcMeta)
         #print('retrieveProtoRequest ')
     except error.BadRequestProtoError as e:
         return handleError(e)
 
     # Execute the specified method of the service with the requested params
     try:
-        response = callServiceMethod(service, method, proto_request)
+        response = callServiceMethod(service, method, proto_request, nrpcMeta)
         #print('callMethod ')
     except error.RpcError as e:
         return handleError(e)
@@ -282,15 +285,15 @@ def workerCallback(*args,**kwargs):
     #print('workerCallback ')
     curThdName = threading.current_thread().name
     transport = args[0]
-    request = args[1]
+    nrpcMeta = args[1]
 
     # execute service
-    rpcResponse = executeRequest(request)
+    rpcResponse = executeRequest(nrpcMeta)
     #print('executeRequest ')
     response_body = rpcResponse.SerializeToString()
     total_len = len(response_body) + PROTOCOL_HEADER_LEN
     msg_flag = 1
-    data = b''.join([struct.pack('!i4b', total_len,msg_flag,0,0,0), response_body])
+    data = b''.join([struct.pack('!4si4b', b'NRPC',total_len,msg_flag,0,0,0), response_body])
 
     #send response
     try:
@@ -325,13 +328,19 @@ class NrpcProtocol(asyncio.Protocol):
 
             bufLen = len(self.clientReadBuf)
             if bufLen < PROTOCOL_HEADER_LEN:
-                logger.warning('Header need 8 bytes')
+                logger.warning('Header need 12 bytes')
                 break
             
-            total_len,msg_flag,_,_,_ = struct.unpack('!i4b', self.clientReadBuf[0:PROTOCOL_HEADER_LEN])
+            tag_,total_len,msg_flag,_,_,_ = struct.unpack('!4si4b', self.clientReadBuf[0:PROTOCOL_HEADER_LEN])
+            tag = tag_.decode("utf-8")
+            if tag != 'NRPC':
+                self.transport.close()
+                logger.error('Request tag error : {}'.format(tag))
+                break
             if msg_flag != 0:
                 logger.error('Request msg type error')
                 self.transport.close()
+                break
 
             if bufLen < total_len:
                 logger.warning('Data field need more bytes')

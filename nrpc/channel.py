@@ -27,11 +27,12 @@ import google.protobuf.service as service
 # Module imports
 from nrpc import controller
 from nrpc import nrpc_pb2
+from nrpc import errno_pb2
 from nrpc import error
 from nrpc import naming
 
 logger = logging.getLogger('')
-PROTOCOL_HEADER_LEN = 8
+PROTOCOL_HEADER_LEN = 12
 
 class SocketFactory():
     '''A factory class for providing socket instances.'''
@@ -123,12 +124,20 @@ class SocketRpcChannel(service.RpcChannel):
 
     def createRpcRequest(self, method, request):
         '''Wrap the user's request in an RPC protocol message.'''
-        rpcRequest = nrpc_pb2.Request()
-        rpcRequest.request_proto = request.SerializeToString()
-        rpcRequest.service_name = method.containing_service.full_name
-        rpcRequest.method_name = method.name
+        nrpcMeta = nrpc_pb2.NrpcMeta()
+        nrpcMeta.correlation_id = 0
+        nrpcRequestMeta = nrpcMeta.request
+        nrpcRequestMeta.service_name = method.containing_service.full_name
+        nrpcRequestMeta.method_name = method.name
+        nrpcRequestMeta.request_body = request.SerializeToString()
+        nrpcRequestMeta.log_id = 0
+        nrpcRequestMeta.trace_id = 0
+        nrpcRequestMeta.span_id = 0
+        nrpcRequestMeta.parent_span_id = 0
+        nrpcRequestMeta.parent_span_id = 0
 
-        return rpcRequest
+        return nrpcMeta
+
 
     def sendRpcMessage(self, sock, rpcRequest):
         '''Send an RPC request to the server.'''
@@ -136,7 +145,7 @@ class SocketRpcChannel(service.RpcChannel):
             body = rpcRequest.SerializeToString()
             total_len = len(body) + PROTOCOL_HEADER_LEN
             msg_flag = 0
-            data = b''.join([struct.pack('!i4b', total_len,msg_flag,0,0,0), body])
+            data = b''.join([struct.pack('!4si4b', b'NRPC', total_len,msg_flag,0,0,0), body])
             #sock.send(data[0:10])
             #sock.send(data[10:])
             sock.sendall(data)
@@ -154,13 +163,17 @@ class SocketRpcChannel(service.RpcChannel):
             logger.debug('recvRpcMessage data len = {}'.format( str(len(byte_stream)) ))
         except socket.error:
             self.closeSocket(sock)
-            raise error.IOError("Error reading data from server")            
+            raise error.IOError("Error reading data from server")
         
-        total_len,msg_flag,_,_,_  = struct.unpack('!i4b', byte_stream[0:PROTOCOL_HEADER_LEN])
+        tag_,total_len,msg_flag,_,_,_  = struct.unpack('!4si4b', byte_stream[0:PROTOCOL_HEADER_LEN])
+        tag = tag_.decode("utf-8")
+        if tag != 'NRPC':
+            self.closeSocket(sock)
+            raise error.BadResponseProtoError('Read wrong tag from server : {}'.format(tag))  
         serialized = byte_stream[PROTOCOL_HEADER_LEN:]
         if total_len != len(serialized) + PROTOCOL_HEADER_LEN:
             self.closeSocket(sock)
-            raise error.BadResponseProtoError("Read wrong data length from server")  
+            raise error.BadResponseProtoError("Read wrong data length from server")
 
         if msg_flag != 1:
             self.closeSocket(sock)
@@ -206,8 +219,8 @@ class SocketRpcChannel(service.RpcChannel):
 
         # If blocking, return response or raise error
         if done is None:
-            if self.rpcResponse.error_code != nrpc_pb2.NOERROR:
-                raise error.RpcError(self.rpcResponse.error)
+            if self.rpcResponse.response.error_code != 0:
+                raise error.RpcError(self.rpcResponse.response.error_text)
             else:
                 return self.serviceResponse
 
@@ -229,133 +242,18 @@ class SocketRpcChannel(service.RpcChannel):
                 rpcRequest = self.createRpcRequest(method, request)
                 self.sendRpcMessage(sock, rpcRequest)
                 self.reply = self.recvRpcMessage(sock)
-                self.rpcResponse = self.parseResponse(self.reply,nrpc_pb2.Response)
-                self.serviceResponse =  self.parseResponse(self.rpcResponse.response_proto,response_class)
+                self.rpcResponse = self.parseResponse(self.reply,nrpc_pb2.NrpcMeta)
+                if self.rpcResponse.response.error_code != 0:
+                    controller.handleError(self.rpcResponse.response.error_code,self.rpcResponse.response.error_text)
+                    logger.error('CallMethod error : {}'.format( self.rpcResponse.response.error_text ))
+                    return
+
+                self.serviceResponse =  self.parseResponse(self.rpcResponse.response.response_body,response_class)
                 return self.tryToRunCallback(done)
+            except error.ProtobufError as e:
+                controller.handleError(e.rpc_error_code,e.message)
+                logger.error('CallMethod error : {0}'.format(e))
             except Exception as e:
-                controller.handleError(nrpc_pb2.IO_ERROR,'{0}'.format(e))
+                controller.handleError(errno_pb2.SYS_EREMOTEIO,'{0}'.format(e))
                 logger.error('CallMethod error : {0}'.format(e))
 
-
-"""
-    def CallMethod(self, method, controller, request, response_class, done):
-        '''Call the RPC method.
-
-        This method uses a LifeCycle instance to manage communication
-        with the server.
-        '''
-        lifecycle = _LifeCycle(controller, self)
-        lifecycle.tryToValidateRequest(request)
-        lifecycle.tryToOpenSocket()
-        lifecycle.tryToSendRpcRequest(method, request)
-        lifecycle.tryToReceiveReply()
-        lifecycle.tryToParseReply()
-        lifecycle.tryToRetrieveServiceResponse(response_class)
-        return lifecycle.tryToRunCallback(done)
-
-"""
-
-class _LifeCycle():
-    '''Represents and manages the lifecycle of an RPC request.'''
-
-    def __init__(self, controller, channel):
-        self.controller = controller
-        self.channel = channel
-        self.sock = None
-        self.byte_stream = None
-        self.rpcResponse = None
-        self.serviceResponse = None
-
-    def tryToValidateRequest(self, request):
-        if self.controller.failed():
-            return
-
-        # Validate the request object
-        try:
-            self.channel.validateRequest(request)
-        except error.BadRequestProtoError as e:
-            self.controller.handleError(nrpc_pb2.BAD_REQUEST_PROTO,
-                                        e.message)
-
-    def tryToOpenSocket(self):
-        if self.controller.failed():
-            return
-
-        # Open socket
-        try:
-            self.sock = self.channel.openSocket(self.channel.host,
-                                                self.channel.port)
-        except error.UnknownHostError as e:
-            self.controller.handleError(nrpc_pb2.UNKNOWN_HOST,
-                                        e.message)
-        except error.IOError as e:
-            self.controller.handleError(nrpc_pb2.IO_ERROR, e.message)
-
-    def tryToSendRpcRequest(self, method, request):
-        if self.controller.failed():
-            return
-
-        # Create an RPC request protobuf
-        rpcRequest = self.channel.createRpcRequest(method, request)
-
-        # Send the request over the socket
-        try:
-            self.channel.sendRpcMessage(self.sock, rpcRequest)
-        except error.IOError as e:
-            self.controller.handleError(nrpc_pb2.IO_ERROR, e.message)
-
-    def tryToReceiveReply(self):
-        if self.controller.failed():
-            return
-
-        # Get the reply
-        try:
-            self.byte_stream = self.channel.recvRpcMessage(self.sock)
-        except error.IOError as e:
-            self.controller.handleError(nrpc_pb2.IO_ERROR, e.message)
-
-    def tryToParseReply(self):
-        if self.controller.failed():
-            return
-
-        #Parse RPC reply
-        try:
-            self.rpcResponse = self.channel.parseResponse(self.byte_stream,
-                                                          nrpc_pb2.Response)
-        except error.BadResponseProtoError as e:
-            self.controller.handleError(nrpc_pb2.BAD_RESPONSE_PROTO, e.message)
-
-    def tryToRetrieveServiceResponse(self, response_class):
-        if self.controller.failed():
-            return
-
-        if self.rpcResponse.HasField('error'):
-            self.controller.handleError(self.rpcResponse.error_reason,
-                                        self.rpcResponse.error)
-            return
-        
-        if self.rpcResponse.HasField('response_proto'):
-            # Extract service response
-            try:
-                self.serviceResponse = self.channel.parseResponse(
-                    self.rpcResponse.response_proto, response_class)
-            except error.BadResponseProtoError as e:
-                self.controller.handleError(nrpc_pb2.BAD_RESPONSE_PROTO,
-                                            e.message)
-
-    def tryToRunCallback(self, done):
-        # Check for any outstanding errors
-        if not self.controller.failed() and self.rpcResponse.error:
-            self.controller.handleError(self.rpcResponse.error_reason,
-                                        self.rpcResponse.error)
-
-        # If blocking, return response or raise error
-        if done is None:
-            if self.controller.failed():
-                raise error.RpcError(self.controller.error())
-            else:
-                return self.serviceResponse
-
-        # Run the callback
-        if self.controller.failed() or self.rpcResponse.callback:
-            done.run(self.serviceResponse)
