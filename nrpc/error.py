@@ -20,6 +20,7 @@ class ProtobufError(Exception):
         '''
         Exception.__init__(self, message)
         self.rpc_error_code = rpc_error_code
+        self.message = message
 
 
 class BadRequestDataError(ProtobufError):

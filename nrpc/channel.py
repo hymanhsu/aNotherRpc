@@ -150,21 +150,27 @@ class SocketRpcChannel(service.RpcChannel):
             #sock.send(data[10:])
             sock.sendall(data)
             logger.debug('sendRpcMessage data len = {}'.format( str(len(data)) ))
+        except (BrokenPipeError, IOError):
+            self.closeSocket(sock)
+            raise error.IOError("Error writing data to server")
         except socket.error:
             self.closeSocket(sock)
             raise error.IOError("Error writing data to server")
 
-
+            
     def recvRpcMessage(self, sock):
         '''Handle reading an RPC reply from the server.'''
         try:
             # Read all data into byte_stream
             byte_stream = sock.recv(self.recvBuf)
             logger.debug('recvRpcMessage data len = {}'.format( str(len(byte_stream)) ))
+        except (BrokenPipeError, IOError):
+            self.closeSocket(sock)
+            raise error.IOError("Error reading data from server")
         except socket.error:
             self.closeSocket(sock)
             raise error.IOError("Error reading data from server")
-        
+            
         tag_,total_len,msg_flag,_,_,_  = struct.unpack('!4si4b', byte_stream[0:PROTOCOL_HEADER_LEN])
         tag = tag_.decode("utf-8")
         if tag != 'NRPC':

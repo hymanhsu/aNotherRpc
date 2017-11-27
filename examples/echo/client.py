@@ -5,7 +5,12 @@ sys.path.append(os.path.abspath('./'))
 import logging
 from nrpc import SocketRpcChannel
 from echo_pb2 import EchoService_Stub,EchoRequest,EchoResponse
+import gflags
 
+FLAGS = gflags.FLAGS
+gflags.DEFINE_string('etcd_ip', '127.0.0.1', 'Etcd server IP')  
+gflags.DEFINE_integer('port', 8000, 'Listenning port')  
+FLAGS(sys.argv)
 
 logger = logging.getLogger('')
 fomatter = logging.Formatter('%(asctime)s %(threadName)15s %(levelname)8s %(message)s (%(filename)s:%(lineno)s)')
@@ -22,8 +27,7 @@ logger.setLevel(logging.DEBUG)
 #logger.addHandler(fh)
 
 
-hostname = 'localhost'
-port = 8000
+port = FLAGS.port
 
 # Create a request
 request = EchoRequest()
@@ -32,7 +36,7 @@ request.message = 'Hello world'
 channel    = SocketRpcChannel(
     service_fullname='sogou.nlu.rpc.example.EchoService',
     node_tags='stage=beta;version=1.0',
-    etcd_ip='127.0.0.1',
+    etcd_ip=FLAGS.etcd_ip,
     etcd_port=2379
 )
 controller = channel.newController()
