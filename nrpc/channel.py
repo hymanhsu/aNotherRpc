@@ -134,7 +134,6 @@ class SocketRpcChannel(service.RpcChannel):
         nrpcRequestMeta.trace_id = 0
         nrpcRequestMeta.span_id = 0
         nrpcRequestMeta.parent_span_id = 0
-        nrpcRequestMeta.parent_span_id = 0
 
         return nrpcMeta
 
