@@ -161,7 +161,14 @@ class SocketRpcChannel(service.RpcChannel):
         '''Handle reading an RPC reply from the server.'''
         try:
             # Read all data into byte_stream
-            byte_stream = sock.recv(self.recvBuf)
+            sock.settimeout(2)
+            byte_stream = bytes()
+            while True:
+                temp = sock.recv(self.recvBuf)
+                if len(temp) > 0:
+                    byte_stream = byte_stream + temp
+                if len(temp) < self.recvBuf:
+                    break
             logger.debug('recvRpcMessage data len = {}'.format( str(len(byte_stream)) ))
         except (BrokenPipeError, IOError):
             self.closeSocket(sock)
