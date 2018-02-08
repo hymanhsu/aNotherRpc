@@ -41,13 +41,17 @@ def parse_etcd_response(data):
 class EtcdHTTPConnect:
 
     def request(self, method_, uri, params=None):
-        if params is None:
-            request = urllib.request.Request(uri, method=method_)
-        else:
-            request = urllib.request.Request(uri, data=urllib.parse.urlencode(params).encode('utf-8'), 
-                method=method_)
-        response = urllib.request.urlopen(request, timeout=3)
-        return (response.status, response.read().decode('utf-8'))
+        try:
+            if params is None:
+                request = urllib.request.Request(uri, method=method_)
+            else:
+                request = urllib.request.Request(uri, data=urllib.parse.urlencode(params).encode('utf-8'), 
+                    method=method_)
+            response = urllib.request.urlopen(request, timeout=3)
+            return (response.status, response.read().decode('utf-8'))
+        except:
+            logger.error('Failed to write data to etcd!')
+            return (500, '')
 
     
 class EtcdClient:
