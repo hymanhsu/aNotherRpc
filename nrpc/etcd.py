@@ -51,7 +51,7 @@ class EtcdHTTPConnect:
             return (response.status, response.read().decode('utf-8'))
         except:
             logger.error('Failed to write data to etcd!')
-            return (500, '')
+            return (500, 'Failed to write data to etcd')
 
     
 class EtcdClient:
